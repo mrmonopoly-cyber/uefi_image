@@ -1,9 +1,12 @@
+#include <stdint.h>
 #include <stdio.h>
 
 #include "protective_mbr/protective_mbr.h"
 
 int main(void)
 {
+  uint32_t logical_block_size = 512;
+
   const char image_name[] = "BOOTX64.efi";
   int err=0;
 
@@ -15,7 +18,7 @@ int main(void)
     return 1;
   }
 
-  if ((err=add_protective_mbr(uefi_image))!=ProtectiveMbrStatus_success)
+  if ((err=add_protective_mbr(uefi_image,logical_block_size))!=ProtectiveMbrStatus_success)
   {
     fprintf(stderr, "failed adding protective mbr: %d\n", err); 
     return 1;
