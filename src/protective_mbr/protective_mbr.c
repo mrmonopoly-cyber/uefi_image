@@ -1,8 +1,6 @@
 #include "protective_mbr.h"
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 typedef struct
 {
@@ -16,43 +14,92 @@ typedef struct
 
 typedef struct
 {
-  uint8_t boot_code[440];
+  uint8_t boot_code[424];
   uint8_t unique_mbr_disk_signature[4];
   uint8_t unknown[2];
   partitionRecord record[4];
-
   uint16_t signature;
-  uint8_t reserved[]; //INFO: Logical Block Size - 512. The rest of the logical block, if any, is reserved. Set to zero.
-}ProtectiveMbr;
+}ProtectiveMbrBase;
 
-ProtectiveMbrStatus add_protective_mbr(FILE* image, const uint32_t logical_block_size)
+#define PROTECTIVE_MBR_BASE_DEFAULT \
+    {\
+      .boot_code = {0},\
+      .unique_mbr_disk_signature = {0},\
+      .unknown = {0},\
+      .record = \
+      {\
+        {\
+          .BootIndicator =1,\
+          .StartingCHS[0] = 0x00,\
+          .StartingCHS[1] = 0x02,\
+          .StartingCHS[2] = 0x00,\
+          .OSType = 0xEE,\
+          .EndingCHS[0] = 0xFF,\
+          .EndingCHS[1] = 0xFF,\
+          .EndingCHS[2] = 0xFF,\
+          .StartingLBA = 0x00000001,\
+        },\
+        {0},\
+        {0},\
+        {0},\
+      },\
+      .signature = 0xAA55,\
+    }
+
+typedef struct
 {
-  size_t err=0;
-  ProtectiveMbr *mbr=NULL;
-  const uint32_t mbr_size = sizeof(*mbr) + logical_block_size - 512;
+  ProtectiveMbrBase base;
+  uint8_t reserved[]; //INFO: Logical Block Size - 512. The rest of the logical block, if any, is reserved. Set to zero.
+}ProtectiveMbrCommon;
 
+typedef struct
+{
+  ProtectiveMbrBase base;
+  uint8_t reserved[0];
+}ProtectiveMbrLB512;
+
+//public
+
+static int _write_protective_mbr(FILE* image, const ProtectiveMbrCommon* const mbr, const uint32_t size)
+{
+  uint32_t err=0;
+  err=fwrite(mbr, 1, size, image);
+
+  if (err!=size)
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
+ProtectiveMbrStatus add_protective_mbr(FILE* image, const MbrLogicalBlockSize logical_block_size)
+{
   if (!image)
   {
     return ProtectiveMbrStatus_invalid_parameter;
   }
-  mbr = calloc(1,mbr_size);
 
-  mbr->record[0].BootIndicator =1;
-  mbr->record[0].StartingCHS[0] = 0x00;
-  mbr->record[0].StartingCHS[1] = 0x02;
-  mbr->record[0].StartingCHS[2] = 0x00;
-  mbr->record[0].OSType = 0xEE;
-  mbr->record[0].StartingLBA = 0x00000001;
+  int err=0;
 
+  switch (logical_block_size)
+  {
+    case MbrLogicalBlockSize_512:
+      ProtectiveMbrLB512 mbr=
+      {
+        .base = PROTECTIVE_MBR_BASE_DEFAULT,
+        .reserved = {},
+      };
+      err = _write_protective_mbr(image,(ProtectiveMbrCommon *) &mbr, sizeof(mbr));
+      break;
+    default:
+      return ProtectiveMbrStatus_invalid_parameter;
+  }
 
-  err=fwrite(mbr, 1, mbr_size, image);
-  free(mbr);
-
-  if (err!=mbr_size)
+  if (err<0)
   {
     return ProtectiveMbrStatus_error_writing_image;
   }
-
 
   return ProtectiveMbrStatus_success;
 }
