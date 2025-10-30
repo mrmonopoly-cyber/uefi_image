@@ -29,4 +29,4 @@ clang-lsp:
 	bear -- make build
 
 clean:
-	rm -rf $(BUILD) $(OUT) *.efi
+	rm -rf $(BUILD) $(OUT) *.efi *.img

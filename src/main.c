@@ -3,16 +3,26 @@
 
 #include "protective_mbr/protective_mbr.h"
 
-int main(void)
+int main(int argc, char **argv)
 {
-  const char image_name[] = "BOOTX64.efi";
+  const char default_disk_image_name[] = "test.img";
+  const char* disk_image_name_ptr = default_disk_image_name;
+
+  if (argc < 2)
+  {
+    printf("using default image name: %s\n",default_disk_image_name);
+  }else
+  {
+    disk_image_name_ptr = argv[1];
+  }
+
   int err=0;
 
-  FILE* uefi_image = fopen(image_name, "wb");
+  FILE* uefi_image = fopen(disk_image_name_ptr, "wb");
 
   if (!uefi_image)
   {
-    fprintf(stderr, "failed creating image: %s\n", image_name); 
+    fprintf(stderr, "failed creating image: %s\n", disk_image_name_ptr); 
     return 1;
   }
 
