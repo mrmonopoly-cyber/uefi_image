@@ -2,3 +2,9 @@ uefi_image
 compile_commands.json
 BOOTX64.efi
 build
+
+
+# Added by cargo
+
+/target
+test.img
