@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  if ((err=add_protective_mbr(uefi_image,MbrLogicalBlockSize_512))!=ProtectiveMbrStatus_success)
+  if ((err=add_protective_mbr(uefi_image,512))!=ProtectiveMbrStatus_success)
   {
     fprintf(stderr, "failed adding protective mbr: %d\n", err); 
     return 1;

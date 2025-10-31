@@ -46,57 +46,38 @@ typedef struct
       .signature = 0xAA55,\
     }
 
-typedef struct
-{
-  ProtectiveMbrBase base;
-  uint8_t reserved[]; //INFO: Logical Block Size - 512. The rest of the logical block, if any, is reserved. Set to zero.
-}ProtectiveMbrCommon;
+//INFO: Logical Block Size - 512. The rest of the logical block, if any, is reserved. Set to zero.
+#define RESERVED_FIELD_SIZE(LBS) LBS - 512 
 
-typedef struct
-{
-  ProtectiveMbrBase base;
-  uint8_t reserved[0];
-}ProtectiveMbrLB512;
-
-//public
-
-static int _write_protective_mbr(FILE* image, const ProtectiveMbrCommon* const mbr, const uint32_t size)
+static int _write_protective_mbr(FILE* image, const ProtectiveMbrBase* const mbr, const uint32_t lbl_size)
 {
   uint32_t err=0;
-  err=fwrite(mbr, 1, size, image);
+  uint8_t zero=0;
 
-  if (err!=size)
+  err=fwrite(mbr, 1, sizeof(*mbr), image);
+
+  if (err!=sizeof(*mbr))
   {
     return -1;
   }
 
+  err=fwrite(&zero, 1,RESERVED_FIELD_SIZE(lbl_size), image);
+
   return 0;
 }
 
-ProtectiveMbrStatus add_protective_mbr(FILE* image, const MbrLogicalBlockSize logical_block_size)
+//public
+
+ProtectiveMbrStatus add_protective_mbr(FILE* image, const uint32_t logical_block_size)
 {
+  ProtectiveMbrBase mbr = PROTECTIVE_MBR_BASE_DEFAULT;
+
   if (!image)
   {
     return ProtectiveMbrStatus_invalid_parameter;
   }
 
-  int err=0;
-
-  switch (logical_block_size)
-  {
-    case MbrLogicalBlockSize_512:
-      ProtectiveMbrLB512 mbr=
-      {
-        .base = PROTECTIVE_MBR_BASE_DEFAULT,
-        .reserved = {},
-      };
-      err = _write_protective_mbr(image,(ProtectiveMbrCommon *) &mbr, sizeof(mbr));
-      break;
-    default:
-      return ProtectiveMbrStatus_invalid_parameter;
-  }
-
-  if (err<0)
+  if (_write_protective_mbr(image,(ProtectiveMbrBase *) &mbr, logical_block_size)<0)
   {
     return ProtectiveMbrStatus_error_writing_image;
   }
