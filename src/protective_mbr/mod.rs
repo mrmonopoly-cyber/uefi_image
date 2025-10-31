@@ -47,7 +47,7 @@ pub struct ProtectiveMbr{
 
 impl Default for ProtectiveMbr{ //INFO: LBL size 512
     fn default() -> Self {
-        Self::new(0) //INFO: 512 -512
+        Self::new(512) 
     }
 }
 
@@ -57,7 +57,7 @@ unsafe impl Zeroable for ProtectiveMbrdata{}
 unsafe impl Pod for ProtectiveMbrdata{}
 
 impl ProtectiveMbr {
-    pub fn new(padding_size: usize) -> Self {
+    pub fn new(lbl_size: usize) -> Self {
         Self {
             data:
             ProtectiveMbrdata 
@@ -73,7 +73,7 @@ impl ProtectiveMbr {
                 ],
                 signature: 0xAA55,
             },
-            padding_size
+            padding_size: lbl_size - 512,
         }
     }
     
