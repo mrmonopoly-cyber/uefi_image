@@ -5,6 +5,7 @@ use std::process::exit;
 use self::protective_mbr::ProtectiveMbr;
 
 mod protective_mbr;
+mod gpt_header;
 
 fn main() {
     let mut disk_image_name = String::from("test.img");
