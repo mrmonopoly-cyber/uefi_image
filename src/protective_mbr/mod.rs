@@ -22,12 +22,12 @@ impl Display for MbrWriteError{
 }
 
 
-const BOOT_CODE_SIZE : usize = 424;
+const BOOT_CODE_SIZE : usize = 440;
 const UNIQUE_MBR_DISK_SIGNATURE_SIZE : usize = 4;
 const UNKNOWN_SIZE : usize = 2;
 const RECORD_SIZE : usize = 4;
 
-#[repr(C)]
+#[repr(C,packed(1))]
 #[derive(Clone, Copy)]
 pub struct ProtectiveMbrdata
 {

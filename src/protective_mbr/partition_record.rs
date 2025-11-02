@@ -1,4 +1,4 @@
-#[repr(C)]
+#[repr(C,packed(1))]
 #[derive(Default,Clone, Copy)]
 pub struct PartitionRecord{
     boot_indicator :u8,
@@ -7,7 +7,6 @@ pub struct PartitionRecord{
     ending_chs: [u8;3],
     staring_lba : u32,
     size_in_lba : u32,
-    
 }
 
 impl PartitionRecord {
