@@ -7,6 +7,8 @@ pub mod partition_record;
 use bytemuck::{bytes_of, Pod, Zeroable};
 use partition_record::PartitionRecord;
 
+use crate::image_write::ImageWrite;
+
 pub enum MbrWriteError{
     SystemError(std::io::Error),
     PartialWrite(usize)
@@ -76,8 +78,10 @@ impl ProtectiveMbr {
             padding_size: lbl_size - 512,
         }
     }
-    
-    pub fn write_to_image(&self, image: & mut File) -> Result<(),MbrWriteError> {
+}
+
+impl ImageWrite<MbrWriteError> for ProtectiveMbr{
+    fn write_to_image(&self, image: & mut File) -> Result<(),MbrWriteError> {
         fn try_write(image: &mut File, bytes: &[u8]) -> Result<(), MbrWriteError>
         {
             let res = image.write(bytes);
@@ -104,5 +108,3 @@ impl ProtectiveMbr {
         Ok(())
     }
 }
-
-

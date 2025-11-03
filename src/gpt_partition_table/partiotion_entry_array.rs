@@ -10,23 +10,20 @@ pub enum PartitionTypeGuid {
 
 const PARITION_NAME_LENGTH: usize = 72;
 
-struct GptPartiotionEntryArray<const N:usize>{
-    entries : [GptPartiotionEntry;N],
-}
-
 #[allow(non_snake_case)]
 #[repr(C,packed(1))]
-#[derive(Debug)]
+#[derive(Debug,Clone, Copy)]
 pub struct GptPartiotionEntryData
 {
     PartitionTypeGUID: PartitionTypeGuid,
     UniquePartitionGUID: GUID,
-    StartingLBA: u64,
-    EndingLBA: u64,
-    Attributes: u64,
+    StartingLBA: LBA,
+    EndingLBA: LBA,
+    Attributes: LBA,
     PartitionName: [u8;PARITION_NAME_LENGTH],
 }
 
+#[derive(Clone,Copy)]
 pub struct GptPartiotionEntry
 {
     data: GptPartiotionEntryData,

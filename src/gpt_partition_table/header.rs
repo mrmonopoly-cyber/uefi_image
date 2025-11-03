@@ -1,5 +1,7 @@
 use super::common::*;
 
+use std::fmt::Display;
+
 #[derive(Debug)]
 #[repr(C,packed(1))]
 pub struct GptHeaderData
@@ -10,11 +12,11 @@ pub struct GptHeaderData
     header_crc32: u32,
     reserved: u32,
     my_lba: u64,
-    alternate_lba: u64,
-    first_usable_lba: u64,
-    last_usable_lba: u64,
+    alternate_lba: LBA,
+    first_usable_lba: LBA,
+    last_usable_lba: LBA,
     disk_guid: GUID,
-    partition_entry_lba: u64,
+    partition_entry_lba: LBA,
     number_of_partition_entries: u32,
     sizeof_partitionentry: u32,
     partition_entry_array_crc32: u32,
@@ -23,10 +25,10 @@ pub struct GptHeaderData
 
 impl GptHeaderData{
     pub fn new(padding_size: u32,
-        alternate_lba: u64,
+        alternate_lba: LBA,
         disk_guid: GUID,
-        first_usable_lba: u64,
-        last_usable_lba: u64,
+        first_usable_lba: LBA,
+        last_usable_lba: LBA,
         number_of_partition_entries: u32,
         ) -> Self
     {
@@ -72,9 +74,15 @@ impl GptHeader {
         }
     }
 
-    pub fn new(block_size: u32, disk_guid: GUID) -> Result<Self, GptHeaderError> {
+    pub fn new(
+        block_size: u32,
+        disk_guid: GUID,
+        number_of_partition_entries: u32)
+        -> Result<Self, GptHeaderError>
+    {
         let padding_size = block_size - 92;
         let first_usable_lba = Self::first_usable_lba_from_lbs(block_size)?;
+        let last_usable_lba = first_usable_lba + u64::from(number_of_partition_entries);
 
         if block_size < 512 {
             Err(GptHeaderError::InvalidBlockSize)
@@ -82,10 +90,11 @@ impl GptHeader {
             Ok(Self {
                 data: GptHeaderData::new(
                           padding_size,
-                          0,
+                          last_usable_lba + 1,
                           disk_guid,
                           first_usable_lba,
-                          0),
+                          last_usable_lba,
+                          number_of_partition_entries),
                 padding_size,
             })
         }
@@ -93,8 +102,8 @@ impl GptHeader {
     
 }
 
-impl Default for GptHeader{
-    fn default() -> Self {
-        Self::new(512).expect("GptHeader default constructor error")
+impl Display for GptHeaderError{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"{}",self)
     }
 }
