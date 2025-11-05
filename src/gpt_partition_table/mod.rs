@@ -7,6 +7,8 @@ use std::fmt::Display;
 use header::*;
 use partiotion_entry_array::*;
 
+use self::common::UnicodeString;
+
 pub enum GptPartitionTableError{
 
 }
@@ -19,8 +21,10 @@ pub struct GptPartitionTable<const N:usize>{
 
 impl<const N:usize> GptPartitionTable<N> {
     pub fn new() -> Self{
-        let unused_partition = GptPartiotionEntry::new(PartitionTypeGuid::UnusedEntry, [0;72]).expect("");
-        let header =GptHeader::new(512, [0;128], 0).expect("basic gpt partition table");  //TODO: parameters
+        let no_name = UnicodeString::<PARITION_NAME_LENGTH>::new("").ok().unwrap();
+        let partition_type = PartitionTypeGuid::UNUSED_ENTRY_GUID;
+        let unused_partition = GptPartiotionEntry::new(partition_type, no_name).expect("");
+        let header =GptHeader::new(512, [0;16], 0).expect("basic gpt partition table");  //TODO: parameters
         Self
         {
             header,
