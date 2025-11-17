@@ -1,13 +1,12 @@
 use std::fmt::Display;
 use std::fs::File;
-use std::io::Write;
 
 pub mod partition_record;
 
 use bytemuck::{bytes_of, Pod, Zeroable};
 use partition_record::PartitionRecord;
 
-use crate::image_write::ImageWrite;
+use crate::image_write::{ImageWrite, ImageWriteError};
 
 pub enum MbrWriteError{
     SystemError(std::io::Error),
@@ -80,30 +79,14 @@ impl ProtectiveMbr {
     }
 }
 
-impl ImageWrite<MbrWriteError> for ProtectiveMbr{
-    fn write_to_image(&self, image: & mut File) -> Result<(),MbrWriteError> {
-        fn try_write(image: &mut File, bytes: &[u8]) -> Result<(), MbrWriteError>
-        {
-            let res = image.write(bytes);
-            match res
-            {
-                Ok(len) => 
-                {
-                    if len != bytes.len(){
-                        Err(MbrWriteError::PartialWrite(len))
-                    }else{
-                        Ok(())
-                    }
-                },
-                Err(e) => Err(MbrWriteError::SystemError(e))
-            }
-        }
+impl ImageWrite for ProtectiveMbr{
+    fn write_to_image(&self, image: & mut File) -> Result<(),ImageWriteError> {
 
         let bytes = bytes_of(&self.data);
         let padding = vec![0u8;self.padding_size];
 
-        try_write(image, bytes)?;
-        try_write(image, &padding)?;
+        Self::try_write(image, bytes)?;
+        Self::try_write(image, &padding)?;
 
         Ok(())
     }

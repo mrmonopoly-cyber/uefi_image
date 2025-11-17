@@ -1,8 +1,12 @@
+use bytemuck::{bytes_of, Pod, Zeroable};
+
+use crate::image_write::ImageWriteError;
+
 use super::common::*;
 
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug,Clone, Copy)]
 #[repr(C,packed(1))]
 pub struct GptHeaderData
 {
@@ -55,6 +59,7 @@ impl GptHeaderData{
 }
 
 #[repr(C,packed(1))]
+#[derive(Debug,Clone, Copy)]
 pub struct GptHeader
 {
     data: GptHeaderData,
@@ -64,24 +69,18 @@ pub struct GptHeader
 #[derive(Debug)]
 pub enum GptHeaderError {
     InvalidBlockSize,
+    ImageWriteFailed,
 }
 
 impl GptHeader {
-    fn first_usable_lba_from_lbs(block_size: u32) -> Result<u64,GptHeaderError>{
-        match block_size {
-            512 => Ok(34),
-            _ => Err(GptHeaderError::InvalidBlockSize)
-        }
-    }
-
     pub fn new(
         block_size: u32,
         disk_guid: GUID,
+        first_usable_lba: u64,
         number_of_partition_entries: u32)
         -> Result<Self, GptHeaderError>
     {
         let padding_size = block_size - 92;
-        let first_usable_lba = Self::first_usable_lba_from_lbs(block_size)?;
         let last_usable_lba = first_usable_lba + u64::from(number_of_partition_entries);
 
         if block_size < 512 {
@@ -104,6 +103,24 @@ impl GptHeader {
 
 impl Display for GptHeaderError{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}",self)
+        match self{
+            GptHeaderError::InvalidBlockSize => write!(f,"InvalidBlockSize"),
+            GptHeaderError::ImageWriteFailed => write!(f,"ImageWriteFailed"),
+        }
     }
 }
+
+impl crate::ImageWrite for GptHeader{
+    fn write_to_image(&self, image: &mut std::fs::File) -> Result<(), ImageWriteError> {
+        let bytes = bytes_of(&self.data);
+        let padding = vec![0_u8;self.padding_size as usize];
+
+        Self::try_write(image, bytes)?;
+        Self::try_write(image, &padding)?;
+
+        Ok(())
+    }
+}
+
+unsafe impl Zeroable for GptHeaderData{}
+unsafe impl Pod for GptHeaderData{}

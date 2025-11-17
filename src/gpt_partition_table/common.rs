@@ -3,6 +3,9 @@ use core::fmt::Display;
 pub type GUID = [u8;16];
 pub type LBA = u64;
 
+pub const EMPTY_GUID : GUID = [0;16];
+
+#[repr(C,packed(1))]
 #[derive(Debug,Clone, Copy)]
 pub struct UnicodeString<const N:usize>
 {
